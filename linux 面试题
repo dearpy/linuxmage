@@ -1,0 +1,4 @@
+查看tcp 连接状态
+ netstat -n | awk '/^tcp/ {++S[$NF]} END {for(a in S) print a, S[a]}'
+tcp 三次握手A与B建立TCP连接时：首先A向B发SYN（同步请求），然后B回复SYN+ACK（同步请求应答），最后A回复ACK确认，这样TCP的一次连接（三次握手）的过程就建立了！
+当I/o负载过大 主要命令：echo deadline > /sys/block/sda/queue/scheduler
