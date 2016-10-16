@@ -1,0 +1,410 @@
+GIT
+    版版本控制工具：
+        -本地版本控制系统
+        -集中化的版本控制系统
+        -分布式的版本控制系统
+
+    BitKeeper，Git,cvs->SVN
+
+    组成：
+        -工作目录 存文件及目录的场所
+        -索引 ->暂存 对应表[文件名（a.txt）-对应hash码（对象库中文件名）]
+            git add file_name [会生出索引]
+        -对象库 ->版本库，文件快照的内容
+            git commit [索引中记录的树快照记录到对象库中，生成对象树]
+                提交之前 git config --help
+    配置文件：git config
+
+        仓库特有：REPO/.git/config [系统等级]
+        全局：~/.gitconfig,--global [对当前系统的所有用户有效]
+        系统：/etc/git/gitconfig,--system [只对当前用户]
+
+        git --help
+    Git的对象类型
+        块（blob）对象：二进制大文件   文件每个版本（内容不包含元文件）
+        树（tree）对象：一个目录树代表一层目录信息；
+        提交（commit）对象：用于保存版本库的元数据（git元数据），包括作者、邮箱、提交日期、日志；每个提交对象都指定一个目录树对象
+        标签：用于给一个特定对象一个易读名称
+    对象库：内容寻址系统；sha1的命名名称；
+        打包文件：pack file 公共部分存储；
+
+
+    相关命令：
+        git add file_name 添加索引
+            . 把当前目录下所有文件添加到索引，不包含.gitgit ls-files -s
+        git ls-files    列出文件列表
+                -s  会显示文件名；索引中已跟踪文件，文件目录列表
+                -o  表示未被追踪的文件
+        git cat-file -p  a4962a5显示文件内容
+        git cat-file -t 查看是什么对象
+        git hash-object install 文件名对应hash的结果做文件名 前两个字符目录后38文件名
+        git-write-tree 把当前索引创建树对象
+        git rm --cached test/path.txt 将索引从缓存中移除
+        git status
+        git config
+            git comfig -l
+            git config --global user.name panyu
+            git config --global user.email '123.com'
+        git commit 提交
+            指明提交目的 -m [message]
+            (root-commit) 第一次提交；每次提交都会指向父提交
+        git diff 比较两个提交的不同
+        git log 查看提交日志
+
+        git clone  myproject/ new
+        git init 初始化仓库 在需要创建的仓库
+            .git/
+            ├── branches [分支]
+            ├── config   [ 当前版本库的配置]
+            ├── description [描述]
+            ├── HEAD[指向当前索引]
+            ├── hooks[钩子]
+            │   ├── applypatch-msg.sample
+            │   ├── commit-msg.sample
+            │   ├── post-update.sample
+            │   ├── pre-applypatch.sample
+            │   ├── pre-commit.sample
+            │   ├── prepare-commit-msg.sample
+            │   ├── pre-push.sample
+            │   ├── pre-rebase.sample
+            │   └── update.sample
+            ├── index [git ls-files -s ;file index  index: Git index, version 2, 1 entries]
+            ├── info
+            │   └── exclude
+            ├── objects[对象库 ；blob，tree，commit]
+            │   ├── info
+            │   └── pack
+            └── refs[引用]
+                ├── heads
+                └── tags[标签]
+    git 文件分类：
+        已追踪（tracked） 已经在版本库，或者已经使用git add 添加到索引中的文件
+        被忽略（ignored） 已经在版本库 需定义通过忽略文件列表，明确申明的文件 git库下.gitignore 的隐藏文件
+                文件名精确匹配；dir/ 目录 *通配 ！取反
+        未追中（untracked） 其他上述两类之外的文件
+          git  add/rm/mv 命令
+            add: 暂存文件; 添加映射路径 文件
+                git ls-files    列出文件列表
+                    -s  会显示文件名；索引中已跟踪文件，文件目录列表
+                        显示暂存的文件信息:权限，对象名
+                    -o  表示未被追踪的文件
+            rm:
+                删除索引及工作目录文件
+                --cached test/path.txt 删除索引中的条目
+            mv:工作目录及索引的名都改变
+    git 提交：记录版本库变更，可以根据时间点进行回。提交是快照索引中的所有信息，并将快照成一个提交对象树。只记录映射信息
+    git log 查看提交日志
+        提交的标识：
+            应用：ID,refernce，SHA1,绝对提交名
+            符号引用：symbolic reference ,symref,指向了绝对提交名
+                本地特性分支名称、远程跟踪分支名称，标签名；
+            名称：
+                refs/heads/REF 本地特性分支
+                refs/remotes/REF:远程跟踪分支
+                refs/tags/REF :标签名
+            git 会自动维护几个特定的特殊符号引用；
+                HEAD  :  当前（活动）分支的最近一次提交；或检出其他分支的最近提交
+                ORIG_HEAD :当多个分支合并时；新生成提交之前的提交保存于此引用中；保存先前版本的Head；
+                FETCHED_HEAD:
+                MERGE_HEAD:合并操作时；其他分支的上一次提交
+        相对提交名：追溯到之前的提交
+            ^:同一代提交的不同父提交 C6^1->C5  C6^2->Y(y另一个分支)
+            ~:返回父提交之前并选择上一代提交 C6~1->C5 C6~2->C4 C6^2~1 X
+    比较：
+        git diff 工作目录与索引
+        git diff --cached 索引与HEAD（最近一次提交）
+        git diff HEAD 工作目录与HEAD（最近一次提交）
+        git diff commit1 commit2 （提交id号）
+        git diff --color commit1 commit2
+            [root@node2 test]# git diff
+            diff --git a/test/11.test b/test/11.test 索引-工作目录
+            index de75902..5d9a897 100644
+            --- a/test/11.test  ---旧文件:索引
+            +++ b/test/11.test  +++新文件:工作目录的文件
+            @@ -1,2 +1,3 @@    @@ @@之间两个不同版本文件的行号
+                            -开头:表示原始（旧）文件删除改行，以得到新行
+                            +开头:在原始文件中加上该行得到新文件
+             test
+             testr2
+            +test3 new
+                排除：git add
+
+            [root@node2 test]# git diff --cached  索引与head
+            diff --git a/test/11.test b/test/11.test
+            index de75902..d3ff916 100644
+            --- a/test/11.test head
+            +++ b/test/11.test 索引
+            @@ -1,2 +1,3 @@
+             test
+             testr2
+            +1343
+                排除： git commit -m ''
+            git diff head  工作目录和head
+                排除：git add 与 git commit
+
+            git diff commit1 commit2
+                git log
+                git diff fbce310c7 HEAD fb的与最近一次的比较[也可以任意两个比较]
+    撤销操作：
+        get reset 会重置工作目录及索引
+                --soft  HEAD指向给定的提交C4，不影响索引和工作目录
+                --mixed HEAD 索引  Head指向给定的提交,并将索引内容改变为指定提交奥的快照，但不改变工作目录（在C4后的索引就没有了）
+                --hard HEAD 索引 工作目录  Head指向给定的提交,并将索引内容改变为指定提交奥的快照，并改变工作目录的内容反应指定的文件内容
+
+            撤销最近一次提交
+                #get reset --soft HEAD^
+
+                git log  提交日志
+                    [root@node2 test]# git log
+                    commit 77e5f1d7db9852fe5c9132c5bad84fa730b62598
+                    Author: root <root@node2.magedu.com>
+                    Date:   Fri Aug 19 17:59:32 2016 +0800
+
+                        v0.1
+            1.2.3 确定某次提交的内容 4 当前状态的文件列表
+       1            commit [ 7edf86e4815dbed4761a588e54237c5b0ad6bc7a]
+                    Author: root <root@node2.magedu.com>
+                    Date:   Fri Aug 19 17:34:21 2016 +0800
+
+       2         git cat-file -p 7edf86e48
+                    [root@node2 test]# git cat-file -p 7edf86e48
+                    tree [ 02fd9b51e39fbd0fb6f5557cf4e7d6e3a0b4050c]
+                    parent fbce310c7e58df7141608140a4d84976e1fa44d3
+                    author root <root@node2.magedu.com> 1471599261 +0800
+                    committer root <root@node2.magedu.com> 1471599261 +0800
+       3         git cat-file -p 02fd9b5
+                    [root@node2 test]# git cat-file -p 02fd9b5
+                    100644 blob bc16baef9c5eeb21329f2dab1016dc649ec3b183    .gitignore
+                    040000 tree 833012fce81be0d783a5def7bd25967cd8a76c78    myfirst
+                    040000 tree 362872f0bdfea3114d6f5a3cf9c180683f75026b    test
+       4          git ls-files -s
+                    [root@node2 test]# git ls-files -s
+                    100644 d3ff916b9313c31abc150705b52ac07d7d1a2a92 0   11.test
+                    100644 2a43bb269b6cbc65955e1906da7c4f79a1804bbf 0   first.sh
+                    100644 5d9a70531da416aadd61bd2458c4ee04e2f6af02 0   new.txt
+                    100644 a4962a500ea8b39c060e8955863ca5bd97f21a2d 0   path.txt
+                    100644 376504e0d113f5ff1d386e36f3de701972500594 0   subdir/1.txt
+
+                #get reset --mixfed HEAD^   head指向最近一次，删除索引
+                #get reset --hard HEAD^     head指向最近一次，删除索引工作目录
+总结；
+未追中->追踪 git add
+追中文件->未追中 git reset --mixed
+        git add file_name
+        git status
+        git reset HEAD file_name （不知文件名，全部撤销到上次提交前）
+
+
+    Git分支：非常轻量化
+        指向某一个提交对象的可变指针
+        分支：
+            默    认:master
+            开放分支:dev
+            特性分支:hotfix
+            远程跟踪分支:remote
+        分支命名：
+            命名法则：
+                可以使用/，但不能/结尾
+                不能以-开头
+                以位于/后面的组件，不能以.开头
+                不能使用连续的..;
+                不能使用空白字符；
+                不能包含元字符 #,-,?,*[等
+            bug/first
+            bug/second
+                bug[/*]
+            必须唯一：分支的名字始终指向目标分支的最近一次提交
+                    git不会保存起源信息，只是保存提交人信息
+        分支创建：分支必须基于某个提交创建
+            git-branch - List, create, or delete branches
+                git branch --list
+                git branch --create dev[分支名] 77e5f1d[start_commit]
+                git branch -b branch_name 创建并切换到创建的分支
+                git branch --delete branch_name
+                git merge <msg> HEAD <commit>  某一个分支与当前分支的HEAD建立起合并关系；任何一个合并会创建一个新提交
+                git show-branch
+                        -r 远程分支
+                        --more 10 多显示几次提交记录
+                git checkout <branch> 检出分支[分支切换]
+                [root@node2 git]# git show-branch
+                ! [bug/first] v1.0
+                 ! [dev] v0.1
+                  * [master] v1.0
+                ---
+                + * [bug/first] v1.0
+                ++* [dev] v0.1
+        合并分支：
+                我们的分支的版本；他们的分支的版本
+                git merge <msg> HEAD <commit>
+        合并的进行：
+            合并基础:最近一次共同版本[ 分开处 ]
+            我们的分支的版本；当前分支的最近一次提交
+            他们的分支的版本:要合并过来的分支的最近一次提交
+                git merge <msg> HEAD <commit>
+        无冲突合并：
+            第一步：确保当前分支没有未提交的 信息；查看当前所在的分支 git branch
+                有需要切换分支 git checkout master
+            第二步：git merge <msg> HEAD <commit>
+                git merge dev
+            第三步：查看合并状态
+                git show-branch
+                git status
+                git log --graph --pretty=oneline --abbrev-commit
+        冲突合并；
+            合并出现冲突
+                合并已经进行，索引已经改变。只是没有提交
+            解决冲突
+                git ls-files --unmerge
+                    [root@node2 test]# git ls-files --unmerge
+                    1 2 3 合并标识
+                    100644 004b9c916f5cbe948f511b6fec05896c5d958ccc 1   first.sh 合并基础
+                    100644 9c3d7efd21b009d8dc5bafbb6622abe06f4010a3 2   first.sh 我们的版本
+                    100644 d83dbd94decba41a8e126a2a1962b2915160ca9b 3   first.sh 他们的版本
+            三方合并标记：
+                <<<<<<<
+                =======
+                >>>>>>>
+
+                操作会保存在文件中：
+                   [root@node2 test]# git diff
+                        diff --cc test/first.sh
+                        index 9c3d7ef,d83dbd9..0000000
+                        --- a/test/first.sh
+                        +++ b/test/first.sh
+                        @@@ -1,4 -1,4 +1,8 @@@
+                          #!/bin/bash
+                          echo "hello world"
+                          echo 'dev branch'
+                        ++<<<<<<< HEAD
+                         +echo "forth "     需要改变的内容
+                        ++=======
+                        + echo "new line"   要替换的内容 但是不去定可不可以
+                        ++>>>>>>> hotfix
+                    手动修复文件：将保留的保留 需要删除的删除
+                        ？ 合并是手动修剪是弄混了
+                    合并 git merge hotfix
+                        git add
+                        git commit -m “”
+                合并冲突
+                    不想合并了
+                    合并还原：
+                        git reset --hard ORIG_HEAD 返回之前状态
+
+
+        git rebase   ？？？
+    远程仓库：
+        基于网络协议：http,https,ssh,git
+
+        克隆操作：
+            git clone   会自动创建远程跟踪分支refs/remotes/origin/master 克隆对方的master
+            检出到本地
+
+          （1）  git fetch 从远程拉取下
+                推送之前 现在本地合并
+          （2）  git push
+
+            远程版本原始版本库refs/heads/master  本地会增加个remote远程跟踪分支
+        协议：本地协议（local）、HTTP/HTTPS协议、ssh协议、Git协议
+
+        本地协议：
+            url:
+                /path/to/repo.git  硬连接
+                file:///path/to/repo.git 完全复制
+
+                git clone file:///root/test /tmp/
+        git
+        ssh
+        http/https协议
+            1.6.5：哑http协议
+            1.6.6+：智能http协议、
+                读/写/认证
+            URL:
+                http://host/path/to/repo.git
+    引用远程版本库：
+        远程版本库：定义在配置文件的一个实体
+            [remote "NAME"]
+        由两部分组成：
+            第一部分：URL
+            第二部分：refspec，定义一个版本库与其他版本（remote）库的映射关系；
+            本地的/origin/head 与远程的master的映射关系
+                语法格式：
+                    +source：destination
+                        source：原引用；本地的分支前缀
+                        destination：目标引用
+                            refs/heads/name:本地分支
+                            refs/remotes/NAME:远程跟踪分支
+                    [remote "publish"]
+                        url = http://HOST/pub/repo_name.git
+                        push = + refs/heads/*:refs/heads/*
+                git config -l
+                    [root@node2 .git]# git config -l
+                    core.repositoryformatversion=0
+                    core.filemode=true
+                    core.bare=false
+                    core.logallrefupdates=true
+                    remote.origin.url=file:///var/lib/git
+                    remote.origin.fetch=+refs/heads/*:refs/remotes/origin/*
+                    branch.master.remote=origin
+                    branch.master.merge=refs/heads/master
+                    */
+                管理远程仓库：
+                    git remote -r 列出远程分支
+                        man git remote
+                    git remote add
+                服务器：
+                    git—daemon
+                        基于git协议
+                        ListenStream=9418
+                        yum install git-daemon
+                    rmp -ql git-daemon
+                        cat /usr/lib/systemd/system/git.service
+                        [Unit]
+                        Description=Git Repositories Server Daemon
+                        Documentation=man:git-daemon(1)
+                        Wants=git.socket
+
+                        [Service]  --base-path 默认仓库路径
+                        User=nobody
+                        ExecStart=/usr/libexec/git-core/git-daemon --base-path=/var/lib/git --export-all --user-path=public_git --syslog --inetd --verbose
+                        StandardInput=socket
+                    创建仓库就可以克隆了
+                        cd /var/lib/git
+                        git init --bare myproject.git
+
+        http 协议：
+            需要模块：
+                httpd -M | grep -Ei "\<(alias|cgi|env)"
+                alias
+                cgi
+                env
+            man git-http-backend
+            <VirtualHost *:80>
+                ServerName git.magedu.com
+                SetEnv GIT_PROJECT_ROOT /var/www/git
+                SetEnv GIT_HTTP_EXPORT_ALL 到处所有功能      是否支持smart HTTP[支持读写] 不支持就只能支持读功能
+                ScriptAlias /git/ /usr/libexec/git-core/git-http-
+                backend/
+                            [rpm -ql git|grep -i git-http-backend]
+                <Directory "/usr/libexec/git-core/">
+                    Options ExecCGI Indexs
+                    Require all granted
+                <\Directory>
+                <LocationMatch "/git/.*/git-receive-pack$">
+                AuthType Basic
+                AuthName "Private Git Repo"
+                AuthUserFile /etc/httpd/conf/.htpasswd
+                Require valid-user
+                <\locationMatch>
+            <\Virtualhost>
+
+            git clone http://172.16.174.100/git/testproject.git
+
+            本地创建
+                git add
+                git commit
+                git push origin master
+                    配置认证，并开发权限
+                git config -l
+                 git config http.receivepack true
+                重新push
+

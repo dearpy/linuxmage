@@ -1,0 +1,861 @@
+Puppet：
+        ansible(agentless)
+        puppet(master/agent) (ruby)
+        saltstack (python)
+    command and control：
+        ansible
+        fabric
+        ...
+    程序：puppet puppet-server
+    puppet工作模型：
+        单机模型
+        master/agent
+
+    单机模型：
+        puppet <subcommand> [options] <action> [options]
+
+            apply             Apply Puppet manifests locally
+            facts             Retrieve and store facts.
+            help              Display Puppet help.
+            module            Creates, installs and searches for modules on the Puppet Forge.
+            man               Display Puppet manual pages.
+            describe          Display help about resource types
+
+            puppet help <subcommand>
+
+            puppet help <subcommand> <action>
+
+        puppet apply：
+
+            Applies a standalone Puppet manifest to the local system.
+
+            puppet apply  [-v|--verbose]  [-d|--debug]  [--noop]  [--execute]   <manifest_file>
+
+        puppet资源：
+             puppet  describe --list
+            资源抽象的纬度（RAL是如何抽象资源的？）：
+                类型：具有类似属性的组件，例如user, group, package等；
+                将资源的属性或状态主与其实现方式分离
+                仅描述资源的目标状态，也即期望其实现的结果，而不是具体过程；
+
+            RAL由“类型”和提供者(Provider)；
+
+            资源定义的文件叫“清单”，资源定义的语法：
+                type {'title':
+                    attribute   =>  value,
+                }
+
+                注意：type必须使用小写字符；title是一个字符串，在同一类型必须惟一；
+
+            获取puppet支持所有资源类型及其说明：
+                puppet describe -l
+
+            获取特定类型的简要参数列表信息：
+                puppet describe -s <type>
+
+            获取特定类型的参数列表详细信息：
+                puppet describe  <type>
+
+            获取特定类型的简要元参数列表信息：
+                puppet describe -s -m <type>
+
+            资源的三类特殊属性：
+                名称/名称变量:
+                    name，可由title表示；
+                ensure：
+                    定义资源的目标状态；
+                元参数：
+                    依赖关系：
+                        before
+                        require
+                    通知关系：
+                        notify
+                        subscribe 订阅
+
+                次序链：->
+                通知链：~>
+
+
+
+            资源引用：
+                Type['title']
+
+            常用类型：
+                notify：
+                    Sends an arbitrary message to the agent run-time log.
+
+                    message：要发送的通知消息内容；
+                    name：消息名称；
+
+                group：
+                    Manage groups.
+
+                    name：组名；
+                    gid： GID；
+                    ensure：present`, `absent`；
+                    system：是否为系统组；
+
+                    group{'distros':
+                        gid     => 2001,
+                        ensure  => present,
+                        system  => false,
+                    }
+
+                user：
+                    Manage users.
+
+                    name：用户名；
+                    uid：UID；
+                    gid：基本组ID;
+                    groups：附加组，不能包含基本组；
+                    comment：注释；
+                    expiry：过期时间；
+                    home：家目录；
+                    password：加密后的密码串；
+                    password_min_age：
+                    shell：用户默认的shell；
+                    system：是否为系统用户；
+                    managehome： Whether to manage the home directory when managing the user.
+                    ensure：present，absent；
+
+                cron：
+                    Installs and manages cron jobs.
+
+                    command：要执行的任务；
+                    ensure：present, absent；
+                    hour：
+                    minute:
+                    monthday:
+                    month:
+                    weekday：
+                    user：添加至哪个用户；
+                    name：cron job的名称；
+
+                    cron{'timesync':
+                        command => '/usr/sbin/ntpdate 172.16.0.1 &> /dev/null',
+                        minute  => '*/5',
+                    }
+
+                package：
+                    Manage packages.
+
+                    name：The package name.
+                    ensure：installed, present, latest, absent
+                    source：Where to find the package file.
+
+                service：
+                    Manage running services.
+
+                    enable：true, false, manual
+                    ensure：Whether a service should be running. running, true; stopped, false；
+                    hasrestart：
+                    name：
+                    path：init scripts搜索路径；默认为/etc/rc.d/init.d/
+                    restart：用户手动指定的restart操作，通常用于定义reload操作；
+
+                file：
+                    Manages files, including their content, ownership, and permissions.
+
+                    ensure：present，absent, file, directory, link
+                        file：文件内容或复制，或直接给出；
+                        link：指明链接目标，即target；
+                    content：直接给定的文件内容；
+                    path：文件路径；可使用puppet url来实现远程复制；
+                    source：A source file, which will be copied into place on the local system.
+                    target：
+                    owner：属主；
+                    group：属组；
+                    mode：权限；
+
+                exec：
+                    Executes external commands. Any command in an `exec` resource **must** be able to run multiple times without causing harm --- that is, it must be *idempotent*.
+
+                    command：namevar，要运行的命令；
+                    cwd：运行命令的工作目录；
+                    user:
+                    group：
+                    onlyif：此处指定的命令运行成功方会运行command指明的命令；
+                    path：命令的搜索路径；
+                    refreshonly：仅接收到订阅的资源通知时方才运行；
+
+
+回顾：
+    master/agent
+    standalone：puppet apply
+
+    resource：
+        type{'title':
+            attribute => value,
+        }
+
+    type：
+        notify, group, user, cron, package, service, file, exec, ...
+
+    资源的三类特殊属性：namevar, ensure(目标状态), meta parameter（before/require, notify/subscribe）
+
+    资源清单：manifest
+        resource
+    站点清单：site manifest
+        node
+
+Puppet(2)
+
+    puppet variable：
+
+        数据类型：
+            字符型：引号可有可无；但单引号为强引用，双引号为弱引用；
+            数值型：默认均识别为字符串，仅在数值上下文才以数值对待；
+            数组：[]中以逗号分隔元素列表；
+            布尔型值：true, false；
+            hash：{}中以逗号分隔k/v数据列表； 键为字符型，值为任意puppet支持的类型；
+            undef：未赋值型 ；
+
+        正则表达式：
+            (?<ENABLED OPTION>:<PATTERN>)
+            (?-<DISABLED OPTION>:<PATTERN>)
+
+                OPTIONS：
+                    i：忽略字符大小写；
+                    m：把.当换行符；
+                    x：忽略<PATTERN>中的空白字符
+
+            不能赋值给变量 ，仅能用在接受=~或!~操作符的位置；
+
+        puppet的变量类型：
+            facts：facter -p
+                由facter提供；top scope；
+            内建变量：
+                master端变量
+                agent端变量
+                parser变量
+            用户自定义变量：
+
+        流程控制语句：
+            if语句：
+                if  CONDITION {
+                    ...
+                } else {
+                    ...
+                }
+
+                CONDITION的给定方式：
+                    (1) 变量
+                    (2) 比较表达式
+                    (3) 有返回值的函数
+
+
+                    if $operatingsystem =~ /(?i-mx:(centos|redhat|fedora))/ {
+                        $pkgname='httpd'
+                    } elsif $operationsystem =~ /(?i-mx:(debian|ubuntu))/ {
+                        $pkgname='apache2'
+                    } else {
+                        $pkgname='httpd'
+                    }
+
+                    package{"$pkgname":
+                        ensure  => installed,
+                    }
+
+
+            case语句：
+                case CONTROL_EXPRESSION {
+                    case1: { ... }
+                    case2: { ... }
+                    case3: { ... }
+                    ...
+                    default: { ... }
+                }
+
+                 CONTROL_EXPRESSION:
+                    (1) 变量
+                    (2) 表达式
+                    (3) 有返回值的函数
+
+                各case的给定方式：
+                    (1) 直接字串；
+                    (2) 变量
+                    (3) 有返回值的函数
+                    (4) 正则表达式模式；
+                    (5) default
+
+            selector语句：
+                CONTROL_VARIABLE ? {
+                    case1 => value1,
+                    case2 => value2,
+                    ...
+                    default => valueN,
+                }
+                $webserver = $operatingsystem ? {
+                    /(?i-mx:ubuntu|debian)/ => 'apache2',
+                    /(?i-mx:centos|fedora|redhat)/ => 'httpd',
+                    default => 'httpd',
+                }
+                CONTROL_VARIABLE的给定方法：
+                    (1) 变量
+                    (2) 有返回值的函数
+
+                各case的给定方式：
+                    (1) 直接字串；
+                    (2) 变量
+                    (3) 有返回值的函数
+                    (4) 正则表达式模式；
+                    (5) default
+
+                    注意：不能使用列表格式；但可以是其它的selecor；
+
+                    $pkgname = $operatingsystem ? {
+                        /(?i-mx:(ubuntu|debian))/       => 'apache2',
+                        /(?i-mx:(redhat|fedora|centos))/        => 'httpd',
+                        default => 'httpd',
+                    }
+
+                    package{"$pkgname":
+                        ensure  => installed,
+                    }
+
+    puppet的类：
+        类：puppet中命名的代码模块，常用于定义一组通用目标的资源，可在puppet全局调用；
+            类可以被继承，也可以包含子类；
+
+        语法格式：
+            class NAME {
+                ...puppet code...
+            }
+
+            class NAME(parameter1, parameter2) {
+                ...puppet code...
+            }
+
+        类代码只有声明后才会执行，调用方式：
+            (1) include CLASS_NAME1, CLASS_NAME2, ...
+            (2) class{'CLASS_NAME':
+                attribute => value,
+                 }
+
+            示例1：
+                class apache2 {
+                    $webpkg = $operatingsystem ? {
+                        /(?i-mx:(centos|redhat|fedora))/        => 'httpd',
+                        /(?i-mx:(ubuntu|debian))/       => 'apache2',
+                        default => 'httpd',
+                    }
+
+                    package{"$webpkg":
+                        ensure  => installed,
+                    }
+
+                    file{'/etc/httpd/conf/httpd.conf':
+                        ensure  => file,
+                        owner   => root,
+                        group   => root,
+                        source  => '/tmp/httpd.conf',
+                        require => Package["$webpkg"],
+                        notify  => Service['httpd'],
+                    }
+
+                    service{'httpd':
+                        ensure  => running,
+                        enable  => true,
+                    }
+                }
+
+                include apache2
+
+            示例2：
+                class apache2($username='daemon',$port='80') {
+                    $webpkg = $operatingsystem ? {
+                        /(?i-mx:(centos|redhat|fedora))/        => 'httpd',
+                        /(?i-mx:(ubuntu|debian))/       => 'apache2',
+                        default => 'httpd',
+                    }
+
+                    package{"$webpkg":
+                        ensure  => installed,
+                    }
+
+                    file{'/etc/httpd/conf/httpd.conf':
+                        ensure  => file,
+                        owner   => root,
+                        group   => root,
+                        source  => '/tmp/httpd.conf',
+                        require => Package["$webpkg"],
+                        notify  => Service['httpd'],
+                    }
+
+                    service{'httpd':
+                        ensure  => running,
+                        enable  => true,
+                    }
+
+                    notify{'msgs':
+                        message => "username variable value $username, port $port",
+                    }
+                }
+
+                class{'apache2':
+                    username => 'apache',
+                    port    => '8080',
+                }
+
+            类继承的方式：
+                class SUB_CLASS_NAME inherits PARENT_CLASS_NAME {
+                    ...puppet code...
+                }
+
+                示例：
+                class nginx {
+                    package{'nginx':
+                        ensure  => installed,
+                    }
+
+                    service{'nginx':
+                        ensure  => running,
+                        enable  => true,
+                        restart => '/usr/sbin/nginx -s reload',
+                    }
+                }
+
+                class nginx::web inherits nginx {
+                    Service['nginx'] {
+                        subscribe +> File['ngx-web.conf'],
+                    }
+
+                    file{'ngx-web.conf':
+                        path    => '/etc/nginx/conf.d/ngx-web.conf',
+                        ensure  => file,
+                        source  => '/root/manifests/ngx-web.conf',
+                    }
+                }
+
+                class nginx::proxy inherits nginx {
+                    Service['nginx'] {
+                        subscribe +> File['ngx-proxy.conf'],
+                    }
+
+                    file{'ngx-proxy.conf':
+                        path    => '/etc/nginx/conf.d/ngx-proxy.conf',
+                        ensure  => file,
+                        source  => '/root/manifests/ngx-proxy.conf',
+                    }
+                }
+
+                include nginx::proxy
+
+    puppet模板：
+
+        erb：模板语言，embedded ruby；
+
+        puppet兼容的erb语法：
+            https://docs.puppet.com/puppet/latest/reference/lang_template_erb.html
+
+        file{'title':
+            ensure  => file,
+            content => template('/PATH/TO/ERB_FILE'),
+        }
+
+        文本文件中内嵌变量替换机制：
+            <%= @VARIABLE_NAME %>
+
+    puppet模块：
+        模块就是一个按约定的、预定义的结构存放了多个文件或子目录的目录，目录里的这些文件或子目录必须遵循一定格式的命名规范；
+        puppet会在配置的路径下查找所需要的模块；
+
+            MODULES_NAME：
+                manifests/
+                    init.pp
+                files/
+                templates/
+                lib/
+                spec/
+                tests/
+
+            模块名只能以小写字母开头，可以包含小写字母、数字和下划线；但不能使用”main"和"settings“；
+
+                manifests/
+                    init.pp：必须一个类定义，类名称必须与模块名称相同；
+                files/：静态文件；
+                    puppet URL:
+                        puppet:///modules/MODULE_NAME/FILE_NAME
+                templates/：
+                    tempate('MOD_NAME/TEMPLATE_FILE_NAME')
+                lib/：插件目录，常用于存储自定义的facts以及自定义类型；
+                spec/：类似于tests目录，存储lib/目录下插件的使用帮助和范例；
+                tests/：当前模块的使用帮助或使用范例文件；
+
+            mariadb模块中的清单文件示例：
+    puppet module list 到哪里去找模块
+    puppet module search 'nginx'
+    puppet module install ''
+    puppet apply --noop -d -v -e "include nginx"
+
+                class mariadb($datadir='/var/lib/mysql') {
+                    package{'mariadb-server':
+                        ensure  => installed,
+                    }
+
+                    file{"$datadir":
+                        ensure  => directory,
+                        owner   => mysql,
+                        group   => mysql,
+                        require => [ Package['mariadb-server'], Exec['createdir'], ],
+                    }
+
+                    exec{'createdir':
+                        command => "mkdir -pv $datadir",
+                        require => Package['mariadb-server'],
+                        path => '/bin:/sbin:/usr/bin:/usr/sbin',
+                    }
+
+                    file{'my.cnf':
+                        path    => '/etc/my.cnf',
+                        content => template('mariadb/my.cnf.erb'),
+                        require => Package['mariadb-server'],
+                        notify  => Service['mariadb'],
+                    }
+
+                    service{'mariadb':
+                        ensure  => running,
+                        enable  => true,
+                        require => [ Exec['createdir'], File["$datadir"], ],
+                    }
+                }
+
+    实例：
+            class tomcat{
+                    #install jdk
+                    include 'jdk'
+
+                    package{"tomcat":
+                            name => "tomcat",
+                            ensure => "installed",
+
+                    }
+                    file{"users":
+                            path => "/etc/tomcat/tomcat-users.xml",
+                            source => "puppet:///modules/tomcat/tomcat-users.xml",
+                            require => "Package[tomcat]",
+                            notify => "Service[tomcat]",
+                    }
+                    file{"serverconf":
+                            path => "/etc/tomcat/server.xml",
+                            content => template("tomcat/server.xml"),
+                            require => "Package[tomcat]",
+                            notify => "Service[tomcat]",
+                    }
+                    service{"tomcat":
+                            ensure => "running",
+                            enable => true,
+
+                    }
+
+            }
+
+            calss{"tomcat":
+            }
+
+回顾：
+    puppet：
+        资源类型：notify, user, group, file, cron, package, service, exec, ...
+            puppet describe -l
+        资源清单：manifests, .pp
+            type{'title':
+                attribute => value
+            }
+
+            字符串、数值、布尔型、数组、hash、undef
+
+            正则表达式：
+                /(?i-mx):PATTERN/
+
+        变量：$variable
+            scope, $::scope::variable
+
+        编程元素：
+            流程控制：
+                if, case, selector, unless；
+
+            类：
+                class name($parameter[=value], ...) {
+                    ...puppet...
+                }
+
+                class subname inherits name {
+                    ...puppet code...
+                }
+
+                子类中引用父类中的资源：
+                    Type['title'] {
+                        attribute => value,
+                        attribute +> value,
+                    }
+
+            声明类：
+                include class_name
+                class{'class_name':
+                    attribute => value,
+                }
+
+        模板：
+            erb：Embedded RuBy
+
+                <%= erb code %>
+                <% erb code %>
+                <%# comment %>
+
+            content => template('/PATH/TO/ERB_FILE')
+
+        模块：
+            MODULE_NAME/
+                manifests/
+                    init.pp
+                files/
+                    puppet:///modules/MOD_NAME/FILE_NAME
+                templates/
+                    template('MOD_NAME/TEMPLATE_NAME')
+                lib/
+                tests/
+                spec/
+
+puppet(3)
+
+    standalone：puppet apply
+    master/agent：agent每隔30分钟到master端请求与自己相关的catalog
+        master: site manifest
+          站点清单 依赖dns解析
+            node 'node_name' {
+                ...puppet code...
+            }
+
+        node_name
+
+        程序包下载路径：
+            https://yum.puppetlabs.com/
+
+        官方文档：
+            https://docs.puppet.com/puppet/3/reference/
+
+        内建函数：
+            https://docs.puppet.com/puppet/3/reference/function.html
+
+        配置参数列表：
+            https://docs.puppet.com/puppet/3/reference/configuration.html
+
+    部署master：
+        安装程序包：facter, puppet, puppet-server
+
+        初始化master：
+            puppet master --no-daemonize --verbose
+                生成证书默认在/var/lib/puppet/ssl
+
+        生成一个完整的配置参数列表：
+
+        配置文件
+            agent
+                server = master.magedu.com
+            server
+         测试：
+                puppet master --no-daemonize --verbose
+                puppet agent --no-daemonize --verbose --noop
+            puppet.conf
+                main 公共配置
+                agent 端的配置
+            puppet master --genconfig  可以重定向到文件中
+            puppet agent --genconfig
+            ...
+
+        打印基于默认配置生效的各配置参数列表：
+            puppet config <action> [--section SECTION_NAME] --section master/agent
+
+            puppet  config  print
+                把当前配置追加到 puppet.conf
+
+
+        基于命令行设定某参数的值：
+            puppet config set
+
+
+    master端管理证书签署：
+        puppet cert <action> [--all] [<host>]
+            action：
+                list
+                sign   --all / host签证
+                revoke
+                clean：吊销指定的客户端的证书，并删除与其相关的所有文件；
+
+    遗留问题：
+        1、清单文件导入：
+            import '/PATH/FROM/SOME_MANIFEST_FILE'
+
+    站点清单的定义：
+        主机名定义：
+            主机名(主机角色)-机架-机房-运营商-区域.域名
+
+        /etc/puppet/manifests/site.pp
+            node 'base' {
+                include ntp
+            }
+
+            node 'HOSTNAME' {
+                ...puppet code...
+            }
+
+            node /PATTERN/ {
+                ...puppet code...
+            }
+
+            节点定义的继承：
+                node NODE inherits PAR_NODE_DEF {
+                    ...puppet code...
+                }
+
+                nodes/
+
+            site.pp manifests/nodes.d
+            import 'nodes.d/*.pp'
+
+    环境配置：
+        各环境配置：
+            /etc/puppet/environments/{production,development,testing}
+
+        master支持多环境：
+            [master]注释掉下两项
+            # modulepath=
+            # manifest=
+            environments = production, development, testing
+
+            [production]
+            modulepath=/etc/puppet/environments/production/modules/
+            manifest=/etc/puppet/environments/production/manifests/site.pp
+
+            [development]
+            modulepath=/etc/puppet/environments/development/modules/
+            manifest=/etc/puppet/environments/development/manifests/site.pp
+
+            [testing]
+            modulepath=/etc/puppet/environments/testing/modules/
+            manifest=/etc/puppet/environments/testing/manifests/site.pp
+
+        agent端：
+            [agent]
+            environment = { production|development | testing }
+
+    额外配置文件：
+        文件系统：fileserver.conf
+        认证（URL）：auth.conf
+
+    puppet kick：
+        agent：
+         puppet.conf
+            [agent]
+            listen = true
+
+         auth.conf
+            path /run    url
+            method save
+            auth any
+            allow master.magedu.com
+
+            path /
+            auth any
+
+        master端：
+            puppet kick
+                puppet kick [--host <HOST>] [--all]
+
+    GUI：
+        foreman：
+
+    项目实践：
+        haproxy(keepalived)
+            cache --> varnish
+            imgs--> nginx server
+            app --> httpd+tomcat
+                --> mariadb-server
+
+            zabbix -->
+                zabbix-server
+                zabbix-agent
+
+
+
+
+        生产环境案例：haproxy.pp
+
+        class haproxy {
+          # init haproxy
+          class init {
+            file { '/etc/init.d/haproxy':
+              ensure        => present,
+              source        => "puppet:///modules/haproxy/haproxy/init.d/haproxy.init",
+              group         => "root",
+              owner         => "root",
+              mode          => "0755",
+            }
+            exec { 'init_haproxy_service':
+              subscribe     => File['/etc/init.d/haproxy'],
+              refreshonly   => true,
+              command       => "/sbin/chkconfig --add haproxy; /sbin/chkconfig --level 235 haproxy off;",
+            }
+            service { 'haproxy':
+              ensure      => running,
+              enable      => true,
+              hasrestart  => true,
+              hasstatus   => true,
+        #       restart     => true,
+            }
+          }
+
+          # init haproxy.cfg
+          class conf {
+        #     file { '/usr/local/haproxy','/usr/local/haproxy/etc':
+            file { ['/usr/local/haproxy','/usr/local/haproxy/etc']:
+              ensure        => directory,
+              before        => File['/usr/local/haproxy/etc/haproxy.cfg'],
+              group         => "root",
+              owner         => "root",
+              mode          => "0755",
+            }
+
+            class piccenter {
+              file { '/usr/local/haproxy/etc/haproxy.cfg':
+                ensure        => present,
+                source        => "puppet:///modules/haproxy/haproxy/conf/haproxy_piccenter.cfg",
+                group         => "root",
+                owner         => "root",
+                mode          => "0644",
+              }
+            }
+          }
+        }
+
+
+
+
+
+
+        keepalived.pp
+
+        class keepalived {
+          # init haproxy
+          class init {
+            file { '/etc/init.d/keepalived':
+              ensure        => present,
+              source        => "puppet:///modules/haproxy/keepalived/init.d/keepalived.init",
+              group         => "root",
+              owner         => "root",
+              mode          => "0755",
+            }
+            exec { 'init_keepalived_service':
+              subscribe     => File['/etc/init.d/keepalived'],
+              refreshonly   => true,
+              command       => "/sbin/chkconfig --add keepalived; /sbin/chkconfig --level 235 keepalived off;",
+            }
+            service { 'keepalived':
+              ensure      => running,
+              enable      => true,
+              hasrestart  => true,
+              hasstatus   => true,
+              restart     => true,
+            }
+          }
+        }

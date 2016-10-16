@@ -1,0 +1,17 @@
+#命令
+    sysstat包中：
+        mpstat
+        nfsiostat
+        pidstat
+        cifsiostat
+        iostat
+        sadf
+        sar
+    vmstat
+    top
+    htop
+    ps
+
+    sar(sa), tsar, htop, dstat, glances, vmstat, netperf, iftop, ss, lsof, iostat
+
+    systemtap, oprofile, perf, valgrind

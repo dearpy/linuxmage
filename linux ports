@@ -1,0 +1,71 @@
+LINUX PORTS
+lvs：
+keepalived：
+haproxy： 5000 9009监测页面端口
+nginx：
+
+varnish：6081通信 6082管理端口
+    vim /etc/sysconfig/varnish
+    #VARNISH_VCL_CONF=/etc/varnish/default.vcl
+    VARNISH_VCL_CONF=/etc/varnish/test.vcl           #调用test.vcl文件
+    VARNISH_LISTEN_PORT=80                           #改为80端口
+    VARNISH_ADMIN_LISTEN_ADDRESS=127.0.0.1           #监听地址
+    VARNISH_ADMIN_LISTEN_PORT=6082                   #管理端口
+    VARNISH_SECRET_FILE=/etc/varnish/secret          #密钥文件
+memcache：
+redis： 6379服务端口 16379集群通信端口
+
+http：80
+https：443
+php-fpm： 9000
+tomcat：
+php：
+mysql：3306
+java：
+ssh：22
+ftp：21 20
+telnet：23
+smtp：25
+bind： 53 dns dnsmasq 53
+vsftp：
+nfs：2049
+samba：
+rsync：873
+squid：3128
+
+mogilefs：7001
+mogstored：接收客户端请求 7500 为tracer提供健康检测及管理端口 7501
+
+pxe：
+    cobber：
+        dhcpd udp 67 dhcp_client 68 tftp ftp(udp 69)/http
+ansible：
+puppet：agent 8139 master 8140
+elk：
+    elasticsearch：
+        9200：客户端访问端口
+        9300：集群情况下服务器之间的通信端口
+    kibana：
+    logstash：
+zabbix：
+git：
+iptables：
+
+kvm：
+hadoop：
+openstack：
+docker： registry 5000 默认
+
+    docker tag [OPTIONS] IMAGE[:TAG] [REGISTRYHOST/][USERNAME/]NAME[:TAG]
+
+ 私有仓库配置
+   准备： /etc/sysconfig/docker
+        ADD_REGISTRY='--add-registry 192.168.1.160:5000'
+        INSECURE_REGISTRY='--insecure-registry 192.168.1.160:5000'
+    关联至本地仓库
+        1.docker tag 8dc35658c01b 192.168.1.160:5000/centos:1.1.1
+            给要push到私有仓库的镜像打标签
+        2.docker push 192.168.1.160:5000/centos:1.1.1
+
+        docker pull 172.168.1.160:5000/centos:1.1.1
+Docker的数据卷
